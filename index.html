@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        main {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .aspect-ratio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .ratio-option {
+            padding: 15px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .ratio-option:hover {
+            background: #edf2f7;
+        }
+
+        .ratio-option.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .result-section {
+            margin-top: 40px;
+            padding-top: 40px;
+            border-top: 2px solid #e2e8f0;
+        }
+
+        .status-container {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-processing {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .image-container {
+            width: 100%;
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .generated-image {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .image-placeholder {
+            color: #a0aec0;
+            font-size: 16px;
+        }
+
+        .task-id {
+            font-family: monospace;
+            background: #2d3748;
+            color: #81e6d9;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: #4a5568;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #2d3748;
+        }
+
+        .image-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .action-btn {
+            padding: 12px 25px;
+            background: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        .action-btn:hover {
+            background: #2d3748;
+        }
+
+        .action-btn.primary {
+            background: #667eea;
+        }
+
+        .action-btn.primary:hover {
+            background: #5a67d8;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                border-radius: 15px;
+            }
+            
+            main {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Image Generator</h1>
+            <p class="subtitle">Create stunning images with AI using prompts</p>
+        </header>
+        
+        <main>
+            <div class="form-group">
+                <label for="prompt">Describe your image:</label>
+                <textarea 
+                    id="prompt" 
+                    placeholder="An astronaut riding a horse on Mars, photorealistic, 4k..."
+                ></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Aspect Ratio:</label>
+                <div class="aspect-ratio-grid">
+                    <div class="ratio-option active" data-ratio="1:1">1:1 (Square)</div>
+                    <div class="ratio-option" data-ratio="16:9">16:9 (Wide)</div>
+                    <div class="ratio-option" data-ratio="4:3">4:3 (Standard)</div>
+                    <div class="ratio-option" data-ratio="9:16">9:16 (Portrait)</div>
+                </div>
+            </div>
+            
+            <button class="generate-btn" id="generateBtn">
+                <span class="loading-spinner" style="display: none;"></span>
+                Generate Image
+            </button>
+            
+            <div class="result-section">
+                <div class="status-container">
+                    <div>
+                        <strong>Status:</strong>
+                        <span id="statusText">Ready to generate</span>
+                        <div id="taskIdContainer" style="margin-top: 10px; display: none;">
+                            <span class="task-id" id="taskId"></span>
+                            <button class="copy-btn" onclick="copyTaskId()">Copy</button>
+                        </div>
+                    </div>
+                    <div id="statusBadge" class="status-badge"></div>
+                </div>
+                
+                <div class="image-container">
+                    <div class="image-placeholder" id="imagePlaceholder">
+                        Your generated image will appear here
+                    </div>
+                    <img id="generatedImage" class="generated-image" alt="Generated image">
+                </div>
+                
+                <div class="image-actions" style="display: none;" id="imageActions">
+                    <button class="action-btn" onclick="downloadImage()">Download</button>
+                    <button class="action-btn primary" onclick="generateNew()">Create Another</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_BASE = 'https://z-image-turbo-omega.vercel.app';
+        let currentTaskId = null;
+        let pollingInterval = null;
+
+        // Initialize aspect ratio selection
+        document.querySelectorAll('.ratio-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.ratio-option').forEach(opt => 
+                    opt.classList.remove('active')
+                );
+                this.classList.add('active');
+            });
+        });
+
+        // Generate image
+        document.getElementById('generateBtn').addEventListener('click', generateImage);
+
+        async function generateImage() {
+            const prompt = document.getElementById('prompt').value.trim();
+            const ratio = document.querySelector('.ratio-option.active').dataset.ratio;
+            
+            if (!prompt) {
+                alert('Please enter a prompt');
+                return;
+            }
+
+            // Update UI
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            btn.querySelector('.loading-spinner').style.display = 'inline-block';
+            updateStatus('pending', 'Starting generation...');
+            hideImage();
+
+            try {
+                // Step 1: Create generation task
+                const response = await fetch(`${API_BASE}/api/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        aspect_ratio: ratio
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success && data.task_id) {
+                    currentTaskId = data.task_id;
+                    updateStatus('processing', 'Processing your image...');
+                    showTaskId(data.task_id);
+                    
+                    // Step 2: Start polling for status
+                    startPolling(data.task_id);
+                } else {
+                    throw new Error('Failed to start generation');
+                }
+            } catch (error) {
+                console.error('Generation error:', error);
+                updateStatus('error', 'Failed to start generation');
+                resetGenerateButton();
+            }
+        }
+
+        function startPolling(taskId) {
+            if (pollingInterval) clearInterval(pollingInterval);
+            
+            pollingInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/api/status?task_id=${taskId}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        if (data.status === 'SUCCESS' && data.imageUrl) {
+                            // Generation complete
+                            clearInterval(pollingInterval);
+                            updateStatus('success', 'Image generated!');
+                            displayImage(data.imageUrl);
+                            resetGenerateButton();
+                        } else if (data.status === 'FAILED') {
+                            // Generation failed
+                            clearInterval(pollingInterval);
+                            updateStatus('error', 'Generation failed');
+                            resetGenerateButton();
+                        } else {
+                            // Still processing
+                            updateStatus('processing', 'Processing...');
+                        }
+                    } else {
+                        throw new Error('Status check failed');
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    clearInterval(pollingInterval);
+                    updateStatus('error', 'Status check failed');
+                    resetGenerateButton();
+                }
+            }, 2000); // Poll every 2 seconds
+        }
+
+        function updateStatus(type, text) {
+            const statusText = document.getElementById('statusText');
+            const statusBadge = document.getElementById('statusBadge');
+            
+            statusText.textContent = text;
+            
+            // Remove all classes
+            statusBadge.className = 'status-badge';
+            
+            // Add appropriate class
+            switch(type) {
+                case 'pending':
+                    statusBadge.classList.add('status-pending');
+                    statusBadge.textContent = 'PENDING';
+                    break;
+                case 'processing':
+                    statusBadge.classList.add('status-processing');
+                    statusBadge.textContent = 'PROCESSING';
+                    break;
+                case 'success':
+                    statusBadge.classList.add('status-success');
+                    statusBadge.textContent = 'SUCCESS';
+                    break;
+                case 'error':
+                    statusBadge.classList.add('status-error');
+                    statusBadge.textContent = 'ERROR';
+                    break;
+                default:
+                    statusBadge.textContent = '';
+            }
+        }
+
+        function showTaskId(taskId) {
+            document.getElementById('taskId').textContent = taskId;
+            document.getElementById('taskIdContainer').style.display = 'block';
+        }
+
+        function displayImage(imageUrl) {
+            const img = document.getElementById('generatedImage');
+            const placeholder = document.getElementById('imagePlaceholder');
+            
+            img.src = imageUrl;
+            img.style.display = 'block';
+            placeholder.style.display = 'none';
+            
+            // Show action buttons
+            document.getElementById('imageActions').style.display = 'flex';
+        }
+
+        function hideImage() {
+            const img = document.getElementById('generatedImage');
+            const placeholder = document.getElementById('imagePlaceholder');
+            
+            img.style.display = 'none';
+            placeholder.style.display = 'block';
+            document.getElementById('imageActions').style.display = 'none';
+        }
+
+        function resetGenerateButton() {
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = false;
+            btn.querySelector('.loading-spinner').style.display = 'none';
+        }
+
+        // Utility functions
+        function copyTaskId() {
+            const taskId = document.getElementById('taskId').textContent;
+            navigator.clipboard.writeText(taskId).then(() => {
+                alert('Task ID copied to clipboard!');
+            });
+        }
+
+        function downloadImage() {
+            const img = document.getElementById('generatedImage');
+            const link = document.createElement('a');
+            link.href = img.src;
+            link.download = `ai-generated-${Date.now()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function generateNew() {
+            // Reset everything
+            document.getElementById('prompt').value = '';
+            hideImage();
+            updateStatus('pending', 'Ready to generate');
+            document.getElementById('taskIdContainer').style.display = 'none';
+            if (pollingInterval) clearInterval(pollingInterval);
+            currentTaskId = null;
+        }
+
+        // Example prompt for testing
+        document.getElementById('prompt').value = "A majestic unicorn standing on a rainbow bridge over a cosmic galaxy, digital art, vibrant colors";
+    </script>
+</body>
+  </html>
