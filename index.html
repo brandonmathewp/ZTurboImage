@@ -48,85 +48,6 @@
             padding: 30px;
         }
 
-        .warning-banner {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 25px;
-            color: #856404;
-        }
-
-        .warning-banner h3 {
-            margin-top: 0;
-            color: #856404;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .warning-banner h3::before {
-            content: "⚠️";
-        }
-
-        .solution-options {
-            margin-top: 20px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .solution-header {
-            background: #2d3748;
-            color: white;
-            padding: 15px;
-            font-weight: 600;
-        }
-
-        .solution-content {
-            padding: 20px;
-            background: #f8fafc;
-        }
-
-        .solution-option {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .solution-option:hover {
-            border-color: #667eea;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
-        }
-
-        .solution-option h4 {
-            margin-top: 0;
-            color: #2d3748;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .solution-option p {
-            margin: 10px 0;
-            color: #4a5568;
-        }
-
-        .code-block {
-            background: #2d3748;
-            color: #81e6d9;
-            padding: 12px;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            overflow-x: auto;
-            margin: 10px 0;
-        }
-
         .form-group {
             margin-bottom: 25px;
         }
@@ -424,61 +345,12 @@
         </header>
         
         <main>
-            <div class="warning-banner">
-                <h3>CORS Issue Detected</h3>
-                <p>The API server doesn't allow requests from different origins (CORS). This is a browser security restriction.</p>
-                <p><strong>Try these solutions:</strong></p>
-            </div>
-
-            <div class="solution-options">
-                <div class="solution-header">Solution Options</div>
-                <div class="solution-content">
-                    <div class="solution-option" onclick="showSolution(1)">
-                        <h4>✅ Solution 1: Browser Extension (Easiest)</h4>
-                        <p>Install a CORS extension to bypass the restriction:</p>
-                        <div class="code-block">
-                            Chrome: "Allow CORS: Access-Control-Allow-Origin"<br>
-                            Firefox: "CORS Everywhere"
-                        </div>
-                        <p><small>Enable the extension and reload this page.</small></p>
-                    </div>
-
-                    <div class="solution-option" onclick="showSolution(2)">
-                        <h4>🔧 Solution 2: Local Proxy Server</h4>
-                        <p>Run a local proxy to bypass CORS:</p>
-                        <div class="code-block">
-                            // Install and run a simple proxy<br>
-                            npm install -g local-cors-proxy<br>
-                            lcp --proxyUrl https://z-image-turbo-omega.vercel.app
-                        </div>
-                        <p><small>Then update the API base URL to: http://localhost:8010/proxy</small></p>
-                    </div>
-
-                    <div class="solution-option" onclick="showSolution(3)">
-                        <h4>🌐 Solution 3: Deploy Your Own Proxy</h4>
-                        <p>Deploy a CORS proxy server:</p>
-                        <div class="code-block">
-                            // Deploy to Vercel or Netlify<br>
-                            // Use: https://github.com/Rob--W/cors-anywhere
-                        </div>
-                        <p><small>More complex but permanent solution.</small></p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="test-section" style="margin: 25px 0; text-align: center;">
-                <button class="test-connection-btn" onclick="testConnection()">
-                    Test API Connection
-                </button>
-                <div id="testResult" style="margin-top: 10px;"></div>
-            </div>
-
             <div class="form-group">
                 <label for="prompt">Describe your image:</label>
                 <textarea 
                     id="prompt" 
                     placeholder="An astronaut riding a horse on Mars, photorealistic, 4k..."
-                ></textarea>
+                >A majestic unicorn standing on a rainbow bridge over a cosmic galaxy, digital art, vibrant colors</textarea>
             </div>
             
             <div class="form-group">
@@ -489,18 +361,6 @@
                     <div class="ratio-option" data-ratio="4:3">4:3 (Standard)</div>
                     <div class="ratio-option" data-ratio="9:16">9:16 (Portrait)</div>
                 </div>
-            </div>
-            
-            <div class="form-group">
-                <label>API Base URL:</label>
-                <input 
-                    type="text" 
-                    id="apiBaseUrl" 
-                    value="https://z-image-turbo-omega.vercel.app"
-                    style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px;"
-                    placeholder="Enter API URL or proxy URL"
-                >
-                <small style="color: #718096;">You can enter a CORS proxy URL here if using Solution 2</small>
             </div>
             
             <button class="generate-btn" id="generateBtn">
@@ -553,13 +413,14 @@
         let pollingInterval = null;
         let debugLog = [];
 
+        // === CORS PROXY FUNCTION - KEY MODIFICATION ===
+        function proxyUrl(targetUrl) {
+            // Prepend the CORS proxy to the target API URL
+            return 'https://corsfix.xyz/' + targetUrl;
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('apiBaseUrl').addEventListener('change', function() {
-                API_BASE = this.value;
-                logDebug(`API base URL changed to: ${API_BASE}`, 'info');
-            });
-
             // Initialize aspect ratio selection
             document.querySelectorAll('.ratio-option').forEach(option => {
                 option.addEventListener('click', function() {
@@ -569,69 +430,10 @@
                     this.classList.add('active');
                 });
             });
-
-            // Set example prompt
-            document.getElementById('prompt').value = "A majestic unicorn standing on a rainbow bridge over a cosmic galaxy, digital art, vibrant colors";
         });
 
         // Generate image
         document.getElementById('generateBtn').addEventListener('click', generateImage);
-
-        function showSolution(solutionNumber) {
-            logDebug(`Selected solution ${solutionNumber}`, 'info');
-            
-            switch(solutionNumber) {
-                case 1:
-                    alert('Install a CORS browser extension:\n\nChrome: Search for "Allow CORS: Access-Control-Allow-Origin"\nFirefox: Search for "CORS Everywhere"\n\nAfter installing, enable it and reload this page.');
-                    break;
-                case 2:
-                    API_BASE = 'http://localhost:8010/proxy';
-                    document.getElementById('apiBaseUrl').value = API_BASE;
-                    logDebug(`Updated API base to local proxy: ${API_BASE}`, 'success');
-                    alert('Updated API URL to use local proxy. Now run in terminal:\n\nnpm install -g local-cors-proxy\nlcp --proxyUrl https://z-image-turbo-omega.vercel.app\n\nThen try again.');
-                    break;
-                case 3:
-                    window.open('https://github.com/Rob--W/cors-anywhere', '_blank');
-                    break;
-            }
-        }
-
-        async function testConnection() {
-            const testResult = document.getElementById('testResult');
-            testResult.innerHTML = '<span style="color: #ed8936;">Testing connection...</span>';
-            
-            logDebug('Testing API connection...', 'info');
-            
-            try {
-                // Try to fetch with no-cors mode first to see if it's just a CORS issue
-                const startTime = Date.now();
-                
-                // Test 1: Simple fetch to check connectivity
-                const response = await fetch(`${API_BASE}/api/status?task_id=test`, {
-                    method: 'GET',
-                    mode: 'no-cors', // This won't throw CORS errors but we can't read response
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    }
-                });
-                
-                const responseTime = Date.now() - startTime;
-                
-                if (response.type === 'opaque') {
-                    // This means the request went through but CORS blocked reading response
-                    testResult.innerHTML = `<span style="color: #48bb78;">✅ Server is reachable! (CORS blocked)</span><br>
-                                           <small>Response time: ${responseTime}ms. The server responds but blocks cross-origin requests.</small>`;
-                    logDebug(`Server is reachable but blocks CORS. Response time: ${responseTime}ms`, 'warning');
-                } else {
-                    testResult.innerHTML = `<span style="color: #48bb78;">✅ Server is reachable!</span><br>
-                                           <small>Response time: ${responseTime}ms</small>`;
-                    logDebug(`Server is reachable. Response time: ${responseTime}ms`, 'success');
-                }
-            } catch (error) {
-                testResult.innerHTML = `<span style="color: #f56565;">❌ Connection failed: ${error.message}</span>`;
-                logDebug(`Connection test failed: ${error.message}`, 'error');
-            }
-        }
 
         function logDebug(message, type = 'info', data = null) {
             const timestamp = new Date().toLocaleTimeString();
@@ -690,9 +492,6 @@
                 return;
             }
 
-            // Update API base from input
-            API_BASE = document.getElementById('apiBaseUrl').value.trim() || API_BASE;
-
             // Clear previous logs
             debugLog = [];
             document.getElementById('debugLog').innerHTML = '';
@@ -714,55 +513,17 @@
                     aspect_ratio: ratio
                 };
 
-                logDebug('Attempting POST request...', 'info');
+                logDebug('Attempting POST request through proxy...', 'info');
 
-                // Try with different modes
-                let response;
-                let attempt = 1;
-                
-                // Attempt 1: Standard fetch (might fail with CORS)
-                try {
-                    logDebug(`Attempt ${attempt}: Standard fetch`, 'info');
-                    response = await fetch(`${API_BASE}/api/generate`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                            'Origin': 'https://z-image-turbo-omega.vercel.app', // Try mimicking original origin
-                            'Referer': 'https://z-image-turbo-omega.vercel.app/',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        mode: 'cors', // Try with cors mode
-                        body: JSON.stringify(requestData)
-                    });
-                    logDebug(`Attempt ${attempt}: Success! Status: ${response.status}`, 'success');
-                } catch (error) {
-                    logDebug(`Attempt ${attempt} failed: ${error.message}`, 'warning');
-                    
-                    // Attempt 2: Try with no-cors mode (can't read response but request goes through)
-                    attempt = 2;
-                    try {
-                        logDebug(`Attempt ${attempt}: Fetch with no-cors mode`, 'info');
-                        response = await fetch(`${API_BASE}/api/generate`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                            },
-                            mode: 'no-cors',
-                            body: JSON.stringify(requestData)
-                        });
-                        logDebug(`Attempt ${attempt}: Request sent (no-cors mode)`, 'info');
-                    } catch (error2) {
-                        logDebug(`Attempt ${attempt} failed: ${error2.message}`, 'error');
-                        throw new Error(`CORS blocked: ${error.message}. Try using a CORS extension or proxy.`);
-                    }
-                }
-
-                // If we got a response in no-cors mode, we can't read it
-                if (response.type === 'opaque') {
-                    throw new Error('CORS blocked reading response. The request was sent but browser blocked the response.');
-                }
+                // === KEY MODIFICATION: Using proxy for POST request ===
+                const response = await fetch(proxyUrl(`${API_BASE}/api/generate`), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    },
+                    body: JSON.stringify(requestData)
+                });
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -783,28 +544,7 @@
                 }
             } catch (error) {
                 logDebug(`Generation failed: ${error.message}`, 'error');
-                
-                // Provide helpful suggestions based on error
-                let errorMsg = error.message;
-                let suggestion = '';
-                
-                if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
-                    suggestion = `
-                        <strong>Try these solutions:</strong>
-                        <ol>
-                            <li>Install a CORS browser extension</li>
-                            <li>Use a local CORS proxy (see Solution 2 above)</li>
-                            <li>Run this page from the same origin as the API</li>
-                        </ol>
-                    `;
-                }
-                
-                updateStatus('error', errorMsg);
-                
-                if (suggestion) {
-                    logDebug(suggestion, 'warning');
-                }
-                
+                updateStatus('error', error.message);
                 resetGenerateButton();
             }
         }
@@ -828,7 +568,8 @@
                 try {
                     logDebug(`Polling attempt ${attempts} for task: ${taskId}`, 'info');
                     
-                    const response = await fetch(`${API_BASE}/api/status?task_id=${taskId}`, {
+                    // === KEY MODIFICATION: Using proxy for GET request ===
+                    const response = await fetch(proxyUrl(`${API_BASE}/api/status?task_id=${taskId}`), {
                         headers: {
                             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                         }
@@ -860,7 +601,7 @@
                     }
                 } catch (error) {
                     logDebug(`Polling error: ${error.message}`, 'error');
-                    if (attempts > 3) { // Only show error after a few attempts
+                    if (attempts > 3) {
                         updateStatus('error', `Polling error: ${error.message}`);
                         clearInterval(pollingInterval);
                         resetGenerateButton();
