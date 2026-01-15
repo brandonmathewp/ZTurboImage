@@ -48,27 +48,6 @@
             padding: 30px;
         }
 
-        .warning-banner {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 25px;
-            color: #856404;
-        }
-
-        .warning-banner h3 {
-            margin-top: 0;
-            color: #856404;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .warning-banner h3::before {
-            content: "⚠️";
-        }
-
         .form-group {
             margin-bottom: 25px;
         }
@@ -234,31 +213,6 @@
             font-size: 16px;
         }
 
-        .task-id {
-            font-family: monospace;
-            background: #2d3748;
-            color: #81e6d9;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 14px;
-            word-break: break-all;
-        }
-
-        .copy-btn {
-            background: #4a5568;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-left: 10px;
-        }
-
-        .copy-btn:hover {
-            background: #2d3748;
-        }
-
         .image-actions {
             display: flex;
             gap: 10px;
@@ -289,69 +243,13 @@
             background: #5a67d8;
         }
 
-        /* Debug Panel */
-        .debug-panel {
-            margin-top: 30px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .debug-header {
-            background: #2d3748;
-            color: white;
-            padding: 12px 20px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .debug-content {
-            background: #f8fafc;
-            padding: 20px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .debug-content pre {
-            margin: 0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
-        .debug-toggle {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 0 5px;
-        }
-
-        .test-connection-btn {
-            background: #ed8936;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            margin-left: 10px;
-        }
-
         @media (max-width: 640px) {
             .container {
                 border-radius: 15px;
             }
-
             main {
                 padding: 20px;
             }
-
             h1 {
                 font-size: 2rem;
             }
@@ -366,11 +264,6 @@
         </header>
 
         <main>
-            <div class="warning-banner">
-                <h3>CORS Workaround Active</h3>
-                <p>Requests are being routed through a public proxy to bypass CORS restrictions. This may add latency.</p>
-            </div>
-
             <div class="form-group">
                 <label for="prompt">Describe your image:</label>
                 <textarea
@@ -393,25 +286,12 @@
                 Generate Image
             </button>
 
-            <div class="debug-panel">
-                <div class="debug-header" onclick="toggleDebug()">
-                    Debug Console
-                    <button class="debug-toggle">▼</button>
-                </div>
-                <div class="debug-content" id="debugContent">
-                    <div id="debugLog">Ready. Using CORS proxy: https://corsproxy.io/</div>
-                </div>
-            </div>
-
             <div class="result-section">
                 <div class="status-container">
                     <div>
                         <strong>Status:</strong>
                         <span id="statusText">Ready to generate</span>
-                        <div id="taskIdContainer" style="margin-top: 10px; display: none;">
-                            <span class="task-id" id="taskId"></span>
-                            <button class="copy-btn" onclick="copyTaskId()">Copy</button>
-                        </div>
+                        <!-- Task ID container has been removed -->
                     </div>
                     <div id="statusBadge" class="status-badge"></div>
                 </div>
@@ -432,22 +312,19 @@
     </div>
 
     <script>
-        // Default API base
+        // Default API base and proxy
         const API_BASE = 'https://z-image-turbo-omega.vercel.app';
         let currentTaskId = null;
         let pollingInterval = null;
-        let debugLog = [];
 
-        // === CORS PROXY FUNCTION - EASY TO SWITCH ===
+        // CORS Proxy function
         function proxyUrl(targetUrl) {
-            // Current proxy: corsproxy.io. To switch, just change this line.
-            // Example: return 'https://new-proxy.example/' + targetUrl;
+            // Using the working proxy. Change here if needed.
             return 'https://corsproxy.io/' + targetUrl;
         }
 
-        // Initialize
+        // Initialize UI
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize aspect ratio selection
             document.querySelectorAll('.ratio-option').forEach(option => {
                 option.addEventListener('click', function() {
                     document.querySelectorAll('.ratio-option').forEach(opt =>
@@ -456,64 +333,10 @@
                     this.classList.add('active');
                 });
             });
-
-            logDebug('UI initialized. CORS proxy active.', 'info');
         });
 
-        // Generate image
-        document.getElementById('generateBtn').addEventListener('click', generateImage);
-
-        // === DEBUG LOGGING ===
-        function logDebug(message, type = 'info', data = null) {
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = {
-                timestamp,
-                message,
-                type,
-                data
-            };
-            debugLog.push(logEntry);
-
-            const debugElement = document.getElementById('debugLog');
-            const entryElement = document.createElement('div');
-            entryElement.style.marginBottom = '5px';
-            entryElement.style.padding = '5px';
-            entryElement.style.borderLeft = `3px solid ${
-                type === 'error' ? '#f56565' :
-                type === 'warning' ? '#ed8936' :
-                type === 'success' ? '#48bb78' :
-                '#4299e1'
-            }`;
-            entryElement.style.backgroundColor = type === 'error' ? '#fff5f5' :
-                                              type === 'warning' ? '#fffaf0' :
-                                              type === 'success' ? '#f0fff4' :
-                                              '#ebf8ff';
-
-            entryElement.innerHTML = `
-                <strong>[${timestamp}] ${type.toUpperCase()}:</strong> ${message}
-                ${data ? `<br><small>${JSON.stringify(data, null, 2)}</small>` : ''}
-            `;
-
-            debugElement.appendChild(entryElement);
-            debugElement.scrollTop = debugElement.scrollHeight;
-
-            console.log(`[${type.toUpperCase()}] ${message}`, data || '');
-        }
-
-        function toggleDebug() {
-            const content = document.getElementById('debugContent');
-            const toggle = document.querySelector('.debug-toggle');
-            if (content.style.display === 'block') {
-                content.style.display = 'none';
-                toggle.textContent = '▼';
-            } else {
-                content.style.display = 'block';
-                toggle.textContent = '▲';
-            }
-        }
-
-        // === MAIN GENERATE FUNCTION ===
-        async function generateImage() {
+        // Main Generate Function
+        document.getElementById('generateBtn').addEventListener('click', async function() {
             const prompt = document.getElementById('prompt').value.trim();
             const ratio = document.querySelector('.ratio-option.active').dataset.ratio;
 
@@ -522,209 +345,106 @@
                 return;
             }
 
-            // Clear previous logs but keep first message
-            debugLog = [];
-            document.getElementById('debugLog').innerHTML = 'Ready. Using CORS proxy: https://corsproxy.io/';
-
             // Update UI
-            const btn = document.getElementById('generateBtn');
+            const btn = this;
             btn.disabled = true;
             btn.querySelector('.loading-spinner').style.display = 'inline-block';
             updateStatus('pending', 'Starting generation...');
             hideImage();
 
-            logDebug(`Using API: ${API_BASE}`, 'info');
-            logDebug(`Prompt: "${prompt}", Aspect Ratio: ${ratio}`, 'info');
-
             try {
-                const requestData = {
-                    prompt: prompt,
-                    aspect_ratio: ratio
-                };
-
-                logDebug('Sending POST request through CORS proxy...', 'info');
-
-                // Using proxy for POST request
-                const proxyTarget = proxyUrl(`${API_BASE}/api/generate`);
-                logDebug(`Proxy URL: ${proxyTarget}`, 'info');
-
-                const response = await fetch(proxyTarget, {
+                // Send generation request via proxy
+                const response = await fetch(proxyUrl(`${API_BASE}/api/generate`), {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    },
-                    body: JSON.stringify(requestData)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt, aspect_ratio: ratio })
                 });
 
-                logDebug(`Response status: ${response.status}`, 'info');
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errorText || 'Server error'}`);
-                }
-
+                if (!response.ok) throw new Error(`Server error: ${response.status}`);
                 const data = await response.json();
-                logDebug('API Response:', 'success', data);
 
                 if (data.success && data.task_id) {
                     currentTaskId = data.task_id;
                     updateStatus('processing', 'Processing your image...');
-                    showTaskId(data.task_id);
-
-                    // Start polling for status
-                    startPolling(data.task_id);
+                    startPolling(data.task_id); // Start checking status
                 } else {
-                    throw new Error(data.message || 'API returned success: false');
+                    throw new Error(data.message || 'Failed to start');
                 }
             } catch (error) {
-                logDebug(`Generation failed: ${error.message}`, 'error');
-
-                // Enhanced error suggestions
-                let suggestion = '';
-                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                    suggestion = 'The CORS proxy might be down. Try switching to a different proxy service (see list in console).';
-                } else if (error.message.includes('429')) {
-                    suggestion = 'Rate limit exceeded. The proxy or API might be limiting requests. Try again in a few minutes or switch proxies.';
-                }
-
                 updateStatus('error', `Failed: ${error.message}`);
-
-                if (suggestion) {
-                    logDebug(`Suggestion: ${suggestion}`, 'warning');
-                }
-
                 resetGenerateButton();
             }
-        }
+        });
 
-        // === POLLING FUNCTION ===
+        // Poll for image status
         function startPolling(taskId) {
             if (pollingInterval) clearInterval(pollingInterval);
-
             let attempts = 0;
-            const maxAttempts = 30;
+            const maxAttempts = 30; // Max 60 seconds
 
             pollingInterval = setInterval(async () => {
                 attempts++;
                 if (attempts > maxAttempts) {
                     clearInterval(pollingInterval);
-                    logDebug(`Polling timeout after ${maxAttempts * 2} seconds`, 'error');
-                    updateStatus('error', 'Timeout: Image generation took too long');
+                    updateStatus('error', 'Timeout: Took too long');
                     resetGenerateButton();
                     return;
                 }
 
                 try {
-                    logDebug(`Polling attempt ${attempts} for task: ${taskId}`, 'info');
-
-                    // Using proxy for GET request
-                    const proxyTarget = proxyUrl(`${API_BASE}/api/status?task_id=${taskId}`);
-                    const response = await fetch(proxyTarget, {
-                        headers: {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: Status check failed`);
-                    }
-
+                    const response = await fetch(proxyUrl(`${API_BASE}/api/status?task_id=${taskId}`));
+                    if (!response.ok) throw new Error(`Status check failed`);
                     const data = await response.json();
-                    logDebug(`Poll response: ${data.status}`, 'info', data);
 
                     if (data.success) {
                         if (data.status === 'SUCCESS' && data.imageUrl) {
                             clearInterval(pollingInterval);
-                            logDebug('Image generation completed!', 'success', data);
                             updateStatus('success', 'Image generated!');
                             displayImage(data.imageUrl);
                             resetGenerateButton();
                         } else if (data.status === 'FAILED') {
                             clearInterval(pollingInterval);
-                            logDebug('Generation failed on server', 'error', data);
-                            updateStatus('error', 'Server reported failure');
+                            updateStatus('error', 'Generation failed');
                             resetGenerateButton();
                         } else {
-                            updateStatus('processing', `${data.status || 'Processing'}... (${attempts * 2}s)`);
+                            updateStatus('processing', `${data.status || 'Processing'}...`);
                         }
                     } else {
-                        throw new Error(`API error: ${data.message || 'Status check failed'}`);
+                        throw new Error('Status check failed');
                     }
                 } catch (error) {
-                    logDebug(`Polling error: ${error.message}`, 'error');
-                    if (attempts > 3) {
-                        updateStatus('error', `Polling error: ${error.message}`);
+                    console.error('Polling error:', error); // Silent log
+                    if (attempts > 3) { // Only fail after a few attempts
+                        updateStatus('error', 'Connection issue');
                         clearInterval(pollingInterval);
                         resetGenerateButton();
                     }
                 }
-            }, 2000);
+            }, 2000); // Check every 2 seconds
         }
 
-        // === UI STATUS FUNCTIONS ===
+        // UI Helper Functions
         function updateStatus(type, text) {
-            const statusText = document.getElementById('statusText');
-            const statusBadge = document.getElementById('statusBadge');
-
-            statusText.textContent = text;
-            statusBadge.className = 'status-badge';
-
-            switch(type) {
-                case 'pending':
-                    statusBadge.classList.add('status-pending');
-                    statusBadge.textContent = 'PENDING';
-                    break;
-                case 'processing':
-                    statusBadge.classList.add('status-processing');
-                    statusBadge.textContent = 'PROCESSING';
-                    break;
-                case 'success':
-                    statusBadge.classList.add('status-success');
-                    statusBadge.textContent = 'SUCCESS';
-                    break;
-                case 'error':
-                    statusBadge.classList.add('status-error');
-                    statusBadge.textContent = 'ERROR';
-                    break;
-            }
-        }
-
-        function showTaskId(taskId) {
-            document.getElementById('taskId').textContent = taskId;
-            document.getElementById('taskIdContainer').style.display = 'block';
+            document.getElementById('statusText').textContent = text;
+            const badge = document.getElementById('statusBadge');
+            badge.className = 'status-badge';
+            badge.textContent = type.toUpperCase();
+            badge.classList.add(`status-${type}`);
         }
 
         function displayImage(imageUrl) {
             const img = document.getElementById('generatedImage');
             const placeholder = document.getElementById('imagePlaceholder');
-
-            img.onload = function() {
-                logDebug('Image loaded successfully', 'success', {
-                    url: imageUrl,
-                    dimensions: `${img.naturalWidth} × ${img.naturalHeight}`
-                });
-            };
-
-            img.onerror = function() {
-                logDebug('Failed to load image from URL', 'error', { url: imageUrl });
-                updateStatus('error', 'Failed to load generated image');
-            };
-
+            img.onload = function() { img.style.display = 'block'; };
+            img.onerror = function() { updateStatus('error', 'Failed to load image'); };
             img.src = imageUrl;
-            img.style.display = 'block';
             placeholder.style.display = 'none';
-
-            // Show action buttons
             document.getElementById('imageActions').style.display = 'flex';
         }
 
         function hideImage() {
-            const img = document.getElementById('generatedImage');
-            const placeholder = document.getElementById('imagePlaceholder');
-
-            img.style.display = 'none';
-            placeholder.style.display = 'block';
+            document.getElementById('generatedImage').style.display = 'none';
+            document.getElementById('imagePlaceholder').style.display = 'block';
             document.getElementById('imageActions').style.display = 'none';
         }
 
@@ -732,14 +452,6 @@
             const btn = document.getElementById('generateBtn');
             btn.disabled = false;
             btn.querySelector('.loading-spinner').style.display = 'none';
-        }
-
-        // Utility functions
-        function copyTaskId() {
-            const taskId = document.getElementById('taskId').textContent;
-            navigator.clipboard.writeText(taskId).then(() => {
-                alert('Task ID copied to clipboard!');
-            });
         }
 
         function downloadImage() {
@@ -753,14 +465,11 @@
         }
 
         function generateNew() {
-            // Reset everything
             document.getElementById('prompt').value = '';
             hideImage();
             updateStatus('pending', 'Ready to generate');
-            document.getElementById('taskIdContainer').style.display = 'none';
             if (pollingInterval) clearInterval(pollingInterval);
             currentTaskId = null;
-            logDebug('Reset UI for new generation', 'info');
         }
     </script>
 </body>
