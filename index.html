@@ -268,6 +268,102 @@
             background: #5a67d8;
         }
 
+        /* Debug Panel */
+        .debug-panel {
+            margin-top: 30px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .debug-header {
+            background: #2d3748;
+            color: white;
+            padding: 12px 20px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .debug-content {
+            background: #f8fafc;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .debug-content pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .debug-toggle {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0 5px;
+        }
+
+        /* Request/Response Viewer */
+        .request-viewer {
+            margin-top: 20px;
+        }
+
+        .viewer-tabs {
+            display: flex;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .viewer-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            color: #718096;
+            border-bottom: 3px solid transparent;
+        }
+
+        .viewer-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .viewer-content {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 0 0 8px 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .error-details {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #c53030;
+        }
+
+        .error-details h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #9b2c2c;
+        }
+
         @media (max-width: 640px) {
             .container {
                 border-radius: 15px;
@@ -314,17 +410,37 @@
                 Generate Image
             </button>
             
+            <div class="debug-panel">
+                <div class="debug-header" onclick="toggleDebug()">
+                    Debug Panel
+                    <button class="debug-toggle">▼</button>
+                </div>
+                <div class="debug-content" id="debugContent">
+                    <div id="debugLog"></div>
+                </div>
+            </div>
+            
             <div class="result-section">
                 <div class="status-container">
                     <div>
                         <strong>Status:</strong>
                         <span id="statusText">Ready to generate</span>
+                        <div class="error-details" id="errorDetails" style="display: none; margin-top: 10px;"></div>
                         <div id="taskIdContainer" style="margin-top: 10px; display: none;">
                             <span class="task-id" id="taskId"></span>
                             <button class="copy-btn" onclick="copyTaskId()">Copy</button>
                         </div>
                     </div>
                     <div id="statusBadge" class="status-badge"></div>
+                </div>
+                
+                <div class="request-viewer">
+                    <div class="viewer-tabs">
+                        <button class="viewer-tab active" onclick="showTab('request')">Request</button>
+                        <button class="viewer-tab" onclick="showTab('response')">Response</button>
+                    </div>
+                    <div class="viewer-content" id="requestViewer">No request sent yet</div>
+                    <div class="viewer-content" id="responseViewer" style="display: none;">No response received yet</div>
                 </div>
                 
                 <div class="image-container">
@@ -346,6 +462,7 @@
         const API_BASE = 'https://z-image-turbo-omega.vercel.app';
         let currentTaskId = null;
         let pollingInterval = null;
+        let debugLog = [];
 
         // Initialize aspect ratio selection
         document.querySelectorAll('.ratio-option').forEach(option => {
@@ -360,6 +477,62 @@
         // Generate image
         document.getElementById('generateBtn').addEventListener('click', generateImage);
 
+        function logDebug(message, type = 'info', data = null) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = {
+                timestamp,
+                message,
+                type,
+                data
+            };
+            debugLog.push(logEntry);
+            
+            const debugElement = document.getElementById('debugLog');
+            const entryElement = document.createElement('div');
+            entryElement.style.marginBottom = '5px';
+            entryElement.style.padding = '5px';
+            entryElement.style.borderLeft = `3px solid ${
+                type === 'error' ? '#f56565' : 
+                type === 'warning' ? '#ed8936' : 
+                type === 'success' ? '#48bb78' : 
+                '#4299e1'
+            }`;
+            entryElement.style.backgroundColor = type === 'error' ? '#fff5f5' : 
+                                              type === 'warning' ? '#fffaf0' : 
+                                              type === 'success' ? '#f0fff4' : 
+                                              '#ebf8ff';
+            
+            entryElement.innerHTML = `
+                <strong>[${timestamp}] ${type.toUpperCase()}:</strong> ${message}
+                ${data ? `<br><small>${JSON.stringify(data, null, 2)}</small>` : ''}
+            `;
+            
+            debugElement.appendChild(entryElement);
+            debugElement.scrollTop = debugElement.scrollHeight;
+            
+            console.log(`[${type.toUpperCase()}] ${message}`, data || '');
+        }
+
+        function toggleDebug() {
+            const content = document.getElementById('debugContent');
+            const toggle = document.querySelector('.debug-toggle');
+            if (content.style.display === 'block') {
+                content.style.display = 'none';
+                toggle.textContent = '▼';
+            } else {
+                content.style.display = 'block';
+                toggle.textContent = '▲';
+            }
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.viewer-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.viewer-content').forEach(content => content.style.display = 'none');
+            
+            document.querySelector(`.viewer-tab[onclick*="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName}Viewer`).style.display = 'block';
+        }
+
         async function generateImage() {
             const prompt = document.getElementById('prompt').value.trim();
             const ratio = document.querySelector('.ratio-option.active').dataset.ratio;
@@ -369,6 +542,11 @@
                 return;
             }
 
+            // Clear previous logs
+            debugLog = [];
+            document.getElementById('debugLog').innerHTML = '';
+            document.getElementById('errorDetails').style.display = 'none';
+
             // Update UI
             const btn = document.getElementById('generateBtn');
             btn.disabled = true;
@@ -376,8 +554,31 @@
             updateStatus('pending', 'Starting generation...');
             hideImage();
 
+            // Show request details
+            const requestData = {
+                endpoint: `${API_BASE}/api/generate`,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                body: {
+                    prompt: prompt,
+                    aspect_ratio: ratio
+                }
+            };
+            
+            document.getElementById('requestViewer').innerHTML = 
+                `<pre>${JSON.stringify(requestData, null, 2)}</pre>`;
+            document.getElementById('responseViewer').innerHTML = 'Waiting for response...';
+
+            logDebug('Starting image generation request', 'info', requestData);
+
             try {
                 // Step 1: Create generation task
+                logDebug('Sending POST request to /api/generate', 'info');
+                
+                const startTime = Date.now();
                 const response = await fetch(`${API_BASE}/api/generate`, {
                     method: 'POST',
                     headers: {
@@ -390,8 +591,35 @@
                     })
                 });
 
-                const data = await response.json();
+                const responseTime = Date.now() - startTime;
+                logDebug(`Request completed in ${responseTime}ms`, 'info');
+                logDebug(`Response status: ${response.status} ${response.statusText}`, 'info');
                 
+                // Log response headers
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+                logDebug('Response headers:', 'info', headers);
+
+                // Show response details
+                const responseText = await response.text();
+                document.getElementById('responseViewer').innerHTML = 
+                    `<pre>Status: ${response.status} ${response.statusText}\n\n${responseText}</pre>`;
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status} - ${responseText}`);
+                }
+
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    throw new Error(`Invalid JSON response: ${responseText}`);
+                }
+                
+                logDebug('Response parsed successfully', 'success', data);
+
                 if (data.success && data.task_id) {
                     currentTaskId = data.task_id;
                     updateStatus('processing', 'Processing your image...');
@@ -400,11 +628,42 @@
                     // Step 2: Start polling for status
                     startPolling(data.task_id);
                 } else {
-                    throw new Error('Failed to start generation');
+                    const errorMsg = data.message || 'Failed to start generation';
+                    logDebug(`API returned error: ${errorMsg}`, 'error', data);
+                    throw new Error(errorMsg);
                 }
             } catch (error) {
                 console.error('Generation error:', error);
-                updateStatus('error', 'Failed to start generation');
+                logDebug(`Generation failed: ${error.message}`, 'error', error);
+                
+                let errorMessage = error.message;
+                let errorDetails = '';
+                
+                // Parse error for more details
+                if (error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Network error: Failed to connect to the server';
+                    errorDetails = 'Check your internet connection and ensure the API endpoint is accessible.';
+                } else if (error.message.includes('CORS')) {
+                    errorMessage = 'CORS Error: Cross-origin request blocked';
+                    errorDetails = 'The API server may not allow requests from this origin. Try adding CORS headers or use a proxy.';
+                } else if (error.message.includes('Invalid JSON')) {
+                    errorMessage = 'Invalid response from server';
+                    errorDetails = 'The server returned non-JSON data. The API might be down or misconfigured.';
+                }
+                
+                updateStatus('error', errorMessage);
+                
+                // Show detailed error
+                const errorElement = document.getElementById('errorDetails');
+                errorElement.innerHTML = `
+                    <h4>Error Details:</h4>
+                    <strong>Message:</strong> ${error.message}<br>
+                    ${errorDetails ? `<strong>Possible cause:</strong> ${errorDetails}<br>` : ''}
+                    <strong>Timestamp:</strong> ${new Date().toLocaleString()}<br>
+                    <strong>Endpoint:</strong> ${API_BASE}/api/generate
+                `;
+                errorElement.style.display = 'block';
+                
                 resetGenerateButton();
             }
         }
@@ -412,34 +671,64 @@
         function startPolling(taskId) {
             if (pollingInterval) clearInterval(pollingInterval);
             
+            let attempts = 0;
+            const maxAttempts = 30; // 60 seconds max (30 * 2 seconds)
+            
             pollingInterval = setInterval(async () => {
+                attempts++;
+                if (attempts > maxAttempts) {
+                    clearInterval(pollingInterval);
+                    logDebug(`Polling timeout after ${maxAttempts * 2} seconds`, 'error');
+                    updateStatus('error', 'Timeout: Image generation took too long');
+                    resetGenerateButton();
+                    return;
+                }
+                
                 try {
+                    logDebug(`Polling attempt ${attempts}: Checking status for task ${taskId}`, 'info');
+                    
                     const response = await fetch(`${API_BASE}/api/status?task_id=${taskId}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
                     const data = await response.json();
+                    logDebug(`Status response received`, 'info', data);
+                    
+                    // Update response viewer
+                    document.getElementById('responseViewer').innerHTML = 
+                        `<pre>${JSON.stringify(data, null, 2)}</pre>`;
                     
                     if (data.success) {
                         if (data.status === 'SUCCESS' && data.imageUrl) {
                             // Generation complete
                             clearInterval(pollingInterval);
+                            logDebug('Image generation completed successfully!', 'success', {
+                                task_id: data.task_id,
+                                imageUrl: data.imageUrl
+                            });
                             updateStatus('success', 'Image generated!');
                             displayImage(data.imageUrl);
                             resetGenerateButton();
                         } else if (data.status === 'FAILED') {
                             // Generation failed
                             clearInterval(pollingInterval);
-                            updateStatus('error', 'Generation failed');
+                            logDebug('Image generation failed on server', 'error', data);
+                            updateStatus('error', 'Generation failed on server');
                             resetGenerateButton();
                         } else {
                             // Still processing
-                            updateStatus('processing', 'Processing...');
+                            const statusText = data.status || 'Processing';
+                            updateStatus('processing', `${statusText}... (${attempts * 2}s)`);
                         }
                     } else {
-                        throw new Error('Status check failed');
+                        throw new Error(`Status check failed: ${data.message || 'Unknown error'}`);
                     }
                 } catch (error) {
-                    console.error('Polling error:', error);
+                    logDebug(`Polling error on attempt ${attempts}: ${error.message}`, 'error');
+                    updateStatus('error', `Polling error: ${error.message}`);
                     clearInterval(pollingInterval);
-                    updateStatus('error', 'Status check failed');
                     resetGenerateButton();
                 }
             }, 2000); // Poll every 2 seconds
@@ -485,6 +774,18 @@
         function displayImage(imageUrl) {
             const img = document.getElementById('generatedImage');
             const placeholder = document.getElementById('imagePlaceholder');
+            
+            img.onload = function() {
+                logDebug('Image loaded successfully', 'success', {
+                    url: imageUrl,
+                    dimensions: `${img.naturalWidth} × ${img.naturalHeight}`
+                });
+            };
+            
+            img.onerror = function() {
+                logDebug('Failed to load image from URL', 'error', { url: imageUrl });
+                updateStatus('error', 'Failed to load generated image');
+            };
             
             img.src = imageUrl;
             img.style.display = 'block';
@@ -532,13 +833,25 @@
             document.getElementById('prompt').value = '';
             hideImage();
             updateStatus('pending', 'Ready to generate');
+            document.getElementById('errorDetails').style.display = 'none';
             document.getElementById('taskIdContainer').style.display = 'none';
+            document.getElementById('requestViewer').innerHTML = 'No request sent yet';
+            document.getElementById('responseViewer').innerHTML = 'No response received yet';
             if (pollingInterval) clearInterval(pollingInterval);
             currentTaskId = null;
         }
 
         // Example prompt for testing
         document.getElementById('prompt').value = "A majestic unicorn standing on a rainbow bridge over a cosmic galaxy, digital art, vibrant colors";
+        
+        // Auto-open debug panel if there's an issue
+        setTimeout(() => {
+            const debugContent = document.getElementById('debugContent');
+            if (debugLog.length > 0) {
+                debugContent.style.display = 'block';
+                document.querySelector('.debug-toggle').textContent = '▲';
+            }
+        }, 1000);
     </script>
 </body>
-  </html>
+</html>
