@@ -243,6 +243,20 @@
             background: #5a67d8;
         }
 
+        /* Legal Footer Styles - NEW SECTION */
+        .legal-footer {
+            margin-top: 50px;
+            padding: 20px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #718096;
+            border-top: 1px solid #e2e8f0;
+            line-height: 1.5;
+        }
+        .legal-footer a {
+            color: #667eea;
+        }
+
         @media (max-width: 640px) {
             .container {
                 border-radius: 15px;
@@ -291,7 +305,6 @@
                     <div>
                         <strong>Status:</strong>
                         <span id="statusText">Ready to generate</span>
-                        <!-- Task ID container has been removed -->
                     </div>
                     <div id="statusBadge" class="status-badge"></div>
                 </div>
@@ -308,6 +321,11 @@
                     <button class="action-btn primary" onclick="generateNew()">Create Another</button>
                 </div>
             </div>
+
+            <!-- Legal Disclaimer Footer - NEW SECTION -->
+            <footer class="legal-footer">
+                <p><strong>Disclaimer:</strong> This tool provides access to an external AI image generation service. Users are solely responsible for the prompts they submit and the images they generate, including ensuring that the content complies with all applicable laws. The generation of illegal, harmful, or infringing content is strictly prohibited. The operator of this interface assumes no liability for user-generated content or any consequences arising from its use.</p>
+            </footer>
         </main>
     </div>
 
